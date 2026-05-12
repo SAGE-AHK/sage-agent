@@ -5,9 +5,9 @@ from agent import SageAgent
 app = FastAPI(title="SAGE Agent API")
 
 agent = SageAgent(
-    event_name="Tech Summit 2026",
-    event_location="Centro de Convenciones, Buenos Aires",
-    event_date="15 de Agosto de 2026"
+    event_name="Entrega de Diplomas AHK 2026",
+    event_location="Oficinas AHK, CABA",
+    event_date="10 de Diciembre de 2026"
 )
 
 class MessageRequest(BaseModel):
