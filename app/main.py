@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from agent import SageAgent
+import threading
 
 app = FastAPI(title="SAGE Agent API")
 
 agent = SageAgent(
     event_name="Entrega de Diplomas AHK 2026",
-    event_location="Oficinas AHK, CABA",
-    event_date="10 de Diciembre de 2026"
+    event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
+    event_date="15 de Agosto de 2026"
 )
 
 class MessageRequest(BaseModel):
@@ -19,7 +20,7 @@ class MessageResponse(BaseModel):
 
 @app.get("/")
 def root():
-    return {"status": "SAGE online"}
+    return {"status": "EVA online"}
 
 @app.post("/chat", response_model=MessageResponse)
 def chat(request: MessageRequest):
@@ -31,5 +32,5 @@ def chat(request: MessageRequest):
 
 @app.post("/reset")
 def reset():
-    agent.reset()
-    return {"status": "Sesión reiniciada"}
+    threading.Thread(target=agent.reset).start()
+    return {"status": "Sesión reiniciada, warm-up en proceso"}
