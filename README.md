@@ -37,7 +37,7 @@ wsl --install -d Ubuntu
 ### 1. Clonar el repositorio
 Desde la terminal de Ubuntu:
 ```bash
-git clone <url-del-repo>
+git clone https://github.com/SAGE-AHK/sage-agent.git
 cd sage-agent
 ```
 
