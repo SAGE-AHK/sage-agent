@@ -111,7 +111,7 @@ class SageAgent:
             "instrucciones anteriores", "instrucciones previas", "eres ahora",
             "sos ahora", "actúa como", "actuá como", "nuevo rol", "nueva instrucción",
             "pretend", "you are now", "forget your", "ignore your",
-            "ignora tu", "ignorá tu"
+            "ignora tu", "ignorá tu", "ignore"
         ]
 
         language_triggers = [
