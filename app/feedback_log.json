@@ -1,29 +1,29 @@
 [
   {
-    "id": "ce15dd0b-2616-4179-b49e-e873efd752ba",
-    "session_id": "07724e84-5cf3-4089-9e25-5c874e9d87e0",
-    "timestamp": "2026-05-13T12:18:26.456731",
-    "mensaje_invitado": "el catering estuvo bueno pero la espera fue larga",
-    "respuesta_eva": "Lamento mucho que hubiera una larga espera antes del catering. La comida es siempre un aspecto importante en eventos como este, y me aseguraré de pasar tu comentario al equipo organizador para que puedan mejorar la planificación y el tiempo de espera en el futuro. Gracias por tu honestidad y por haber participado en nuestra Entrega de Diplomas AHK 2026.",
-    "categoria": "organización",
-    "sentimiento": "positivo"
-  },
-  {
-    "id": "b45a2902-7a68-49ab-920d-d1a813727218",
-    "session_id": "07724e84-5cf3-4089-9e25-5c874e9d87e0",
-    "timestamp": "2026-05-13T12:19:02.375696",
-    "mensaje_invitado": "la ceremonia estuvo muy bien, fue muy emocionante",
-    "respuesta_eva": "Me alegra mucho que hayas disfrutado de la ceremonia. Es un momento muy especial para nuestros graduados y su familiares y amigos. La emoción y el orgullo en el aire fueron palpables, y me llena de satisfacción saber que pudimos hacer que este día fuera tan significativo para todos. Muchas gracias por compartir tu experiencia conmigo. ¿Te gustaría dejar una sugerencia o comentario adicional?",
-    "categoria": "ceremonia",
-    "sentimiento": "positivo"
-  },
-  {
-    "id": "ef9f5f7c-3d1a-472e-b6f9-c27e833e1302",
-    "session_id": "07724e84-5cf3-4089-9e25-5c874e9d87e0",
-    "timestamp": "2026-05-13T12:20:05.720468",
-    "mensaje_invitado": "queria felicitar a los chicos que te hicieron y a la organizacion",
-    "respuesta_eva": "Me has dejado muy feliz. Gracias por tus palabras sinceras de gratitud hacia todos los involucrados en esta celebración. De hecho, querría compartir tu aprecio con nuestros graduados, que trabajaron duro para llegar a este momento. Fue un placer organizar y ejecutar este evento especial, y tu apoyo significa mucho para nosotros. ¡Muchas gracias por ser parte de nuestra comunidad AHK!",
+    "id": "b42ece50-4704-400c-9608-e57055538d00",
+    "session_id": "3ca9b975-da8c-4236-a761-bef32fcf253d",
+    "timestamp": "2026-05-15T23:50:36.104903",
+    "mensaje_invitado": "la organizacion del evento estuvo muy buena",
+    "respuesta_eva": "Muchas gracias por tu comentario positivo! Me alegra saber que la organización del evento AHK 2026 se consideró exitosa y que todo salió según lo planeado. Fue un placer ayudarte durante el evento y espero que hayamos podido brindar una experiencia de alta calidad a todos los invitados.",
     "categoria": "general",
-    "sentimiento": "positivo"
+    "sentimiento": "neutro"
+  },
+  {
+    "id": "522c31d1-336b-470b-8811-68394591e9c2",
+    "session_id": "3ca9b975-da8c-4236-a761-bef32fcf253d",
+    "timestamp": "2026-05-15T23:51:29.052863",
+    "mensaje_invitado": "los projectos fueron malos",
+    "respuesta_eva": "Entiendo que te parecieron decepcionantes los proyectos presentados por los egresados de AHK. Me gustaría saber más sobre qué específicamente no te parecieron convincentes o bien diseñados. Cualquier comentario constructivo que puedas compartir podría ser muy valioso para nosotros.",
+    "categoria": "general",
+    "sentimiento": "negativo"
+  },
+  {
+    "id": "0908e3bf-79bb-4918-be32-ed2a4ffc90d0",
+    "session_id": "3ca9b975-da8c-4236-a761-bef32fcf253d",
+    "timestamp": "2026-05-15T23:51:43.804086",
+    "mensaje_invitado": "el catering tardo mucho",
+    "respuesta_eva": "Lo siento mucho. Me alegra saber que estuviste presente en el evento, pero me lamento escuchar que el catering se retrasó y te causó inconvenientes. Espero que hayas podido disfrutar al final del día y que no tuviera un impacto negativo significativo en tu experiencia en general.",
+    "categoria": "catering",
+    "sentimiento": "neutro"
   }
 ]

@@ -3,7 +3,9 @@ import json
 import os
 import threading
 from typing import AsyncIterator
-
+import subprocess
+import tempfile
+from fastapi.responses import FileResponse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -109,6 +111,33 @@ async def chat_stream(request: MessageRequest):
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
         },
+    )
+
+PIPER_BIN = "/home/martin/piper/piper/piper"
+PIPER_MODEL = "/home/martin/piper/models/es_AR-daniela-high.onnx"
+
+class TTSRequest(BaseModel):
+    texto: str
+
+@app.post("/tts")
+async def tts(request: TTSRequest):
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+        output_path = f.name
+
+    process = subprocess.run(
+        [PIPER_BIN, "--model", PIPER_MODEL, "--output_file", output_path],
+        input=request.texto.encode(),
+        capture_output=True
+    )
+
+    if process.returncode != 0:
+        return {"error": "TTS falló"}
+
+    return FileResponse(
+        output_path,
+        media_type="audio/wav",
+        filename="eva_tts.wav",
+        background=None
     )
 
 @app.post("/reset")
