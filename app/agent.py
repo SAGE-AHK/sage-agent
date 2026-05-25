@@ -57,10 +57,14 @@ class SageAgent:
             payload = {
                 "model": MODEL,
                 "stream": False,
-                "options": {"num_predict": TOKEN_LIMITS["simple"]},
+                "options": {
+                    "num_predict": token_limit,
+                    "temperature": 0.3,
+                    "repeat_penalty": 1.1,
+                },
                 "messages": [
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": "hola"},
+                    *self.history
                 ]
             }
             response = requests.post(OLLAMA_URL, json=payload, timeout=60)
@@ -101,7 +105,11 @@ class SageAgent:
         payload = {
             "model": MODEL,
             "stream": False,
-            "options": {"num_predict": token_limit},
+            "options": {
+                "num_predict": token_limit,
+                "temperature": 0.3,
+                "repeat_penalty": 1.1,
+            },
             "messages": [
                 {"role": "system", "content": self.system_prompt},
                 *self.history
