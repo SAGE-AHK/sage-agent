@@ -49,6 +49,22 @@ async def startup():
         event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
         event_date="15 de Agosto de 2026"
     )
+    await warmup_piper()
+
+async def warmup_piper():
+    try:
+        print("[EVA TTS] Primeando Piper...")
+        process = subprocess.run(
+            [PIPER_BIN, "--model", PIPER_MODEL, "--output_file", "/tmp/warmup.wav"],
+            input="hola".encode(),
+            capture_output=True
+        )
+        if process.returncode == 0:
+            print("[EVA TTS] Piper listo.")
+        else:
+            print("[EVA TTS] Warmup de Piper falló.")
+    except Exception as e:
+        print(f"[EVA TTS] Error en warmup: {e}")
 
 class MessageRequest(BaseModel):
     mensaje: str

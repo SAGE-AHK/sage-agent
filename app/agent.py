@@ -52,6 +52,7 @@ class SageAgent:
         self._warm_up()
 
     def _warm_up(self):
+        print("[EVA] Warm-up iniciado...")
         try:
             payload = {
                 "model": MODEL,
