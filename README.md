@@ -136,12 +136,15 @@ cd app
 python3 -m uvicorn main:app --reload --port 8000
 ```
 
-Al arrancar vas a ver dos fases en los logs:
+Al arrancar vas a ver tres fases en los logs:
 
 ```
 [EVA Embeddings] Vectorizando intents...
 [EVA Embeddings] Listo — 10 intents indexados.
+[EVA] Warm-up iniciado...
 [EVA] Warm-up completado. Modelo listo.
+[EVA TTS] Primeando Piper...
+[EVA TTS] Piper listo.
 ```
 
 Cuando aparezca `Modelo listo`, el servidor está listo para recibir requests.
