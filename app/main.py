@@ -39,11 +39,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-agent = SageAgent(
-    event_name="Entrega de Diplomas AHK 2026",
-    event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
-    event_date="15 de Agosto de 2026"
-)
+agent = None
+
+@app.on_event("startup")
+async def startup():
+    global agent
+    agent = SageAgent(
+        event_name="Entrega de Diplomas AHK 2026",
+        event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
+        event_date="15 de Agosto de 2026"
+    )
 
 class MessageRequest(BaseModel):
     mensaje: str

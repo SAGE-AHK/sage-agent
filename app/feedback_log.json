@@ -25,5 +25,13 @@
     "respuesta_eva": "Lo siento mucho. Me alegra saber que estuviste presente en el evento, pero me lamento escuchar que el catering se retrasó y te causó inconvenientes. Espero que hayas podido disfrutar al final del día y que no tuviera un impacto negativo significativo en tu experiencia en general.",
     "categoria": "catering",
     "sentimiento": "neutro"
+  },
+  {
+    "id": "ec679dcb-ff75-489d-89bc-a2288d6e5d16",
+    "session_id": "757fa238-1f1e-4c62-a779-81ecbdfabe5a",
+    "timestamp": "2026-05-25T03:18:16.932054",
+    "mensaje_invitado": "Qué es este evento",
+    "respuesta_eva": "El evento que nos rodea es la Entrega de Diplomas AHK 2026, una ceremonia formal donde se reconocerán a los egresados de todas las carreras por finalizar su formación. Este año hemos logrado un gran éxito con el proyecto SAGE, un sistema de gestión y asistencia para eventos corporativos con inteligencia artificial, desarrollado conjuntamente por los estudiantes de Sistemas IT y Data Science. ¿Quieres saber más sobre SAGE o cómo llegamos a este punto?",
+    "categoria": "feedback"
   }
 ]
