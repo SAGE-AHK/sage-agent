@@ -10,8 +10,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from dotenv import load_dotenv
 
 from agent import SageAgent
+load_dotenv()
 
 app = FastAPI(title="SAGE Agent API")
 
@@ -113,8 +115,8 @@ async def chat_stream(request: MessageRequest):
         },
     )
 
-PIPER_BIN = "/home/martin/piper/piper/piper"
-PIPER_MODEL = "/home/martin/piper/models/es_AR-daniela-high.onnx"
+PIPER_BIN = os.getenv("PIPER_BIN", "/home/martin/piper/piper/piper")
+PIPER_MODEL = os.getenv("PIPER_MODEL", "/home/martin/piper/models/es_AR-daniela-high.onnx")
 
 class TTSRequest(BaseModel):
     texto: str
