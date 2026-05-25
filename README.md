@@ -15,6 +15,8 @@ EVA es el módulo de asistente conversacional del sistema SAGE. Se encarga de re
 | Modelo LLM | Ollama | latest |
 | Modelo de lenguaje | llama3.2:3b | — |
 | Modelo de embeddings | nomic-embed-text | — |
+| TTS | Piper TTS | 2023.11.14-2 |
+| Modelo de voz | es_AR-daniela-high | — |
 | Entorno recomendado | WSL2 + Ubuntu | Ubuntu 22.04+ |
 
 ---
@@ -71,8 +73,35 @@ ollama pull nomic-embed-text
 
 ### 5. Instalar dependencias de Python
 ```bash
-pip3 install fastapi uvicorn requests --break-system-packages
+pip3 install fastapi uvicorn requests python-dotenv --break-system-packages
 ```
+
+### 6. Instalar Piper TTS
+
+```bash
+mkdir -p ~/piper && cd ~/piper
+wget https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz
+tar -xzf piper_linux_x86_64.tar.gz
+```
+
+Descargar el modelo de voz en español argentino:
+
+```bash
+mkdir -p ~/piper/models && cd ~/piper/models
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_AR/daniela/high/es_AR-daniela-high.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_AR/daniela/high/es_AR-daniela-high.onnx.json
+```
+
+### 7. Configurar variables de entorno
+
+```bash
+cp .env.example .env
+```
+
+Editá `.env` con las rutas de tu instalación de Piper:
+
+PIPER_BIN=/home/tu_usuario/piper/piper/piper
+PIPER_MODEL=/home/tu_usuario/piper/models/es_AR-daniela-high.onnx
 
 ---
 
@@ -158,6 +187,15 @@ Devuelve tres eventos en secuencia:
 data: {"estado": "pensando"}
 data: {"estado": "hablando", "respuesta": "...", "historial_length": 2}
 data: {"estado": "esperando"}
+```
+
+### `POST /tts`
+Convierte texto a audio usando Piper TTS con la voz Daniela (español argentino). Devuelve un archivo WAV.
+```bash
+curl -s -X POST http://localhost:8000/tts \
+  -H "Content-Type: application/json" \
+  -d '{"texto": "Bienvenido al evento"}' \
+  --output salida.wav && ls -lh salida.wav
 ```
 
 ### `POST /reset`
@@ -275,8 +313,8 @@ sage-agent/
 
 ## Próximos pasos del módulo
 
-- [ ] STT en el frontend (escuchar al invitado)
-- [ ] TTS en el frontend (EVA habla la respuesta)
+- [x] STT en el frontend con Web Speech API
+- [x] TTS con Piper TTS — voz Daniela (español argentino)
 - [ ] Reemplazar feedback_log.json por llamada a API de Analítica
 - [ ] Endpoint de bienvenida personalizada por QR
 - [ ] Integración con API de eventos del equipo back
