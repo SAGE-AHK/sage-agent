@@ -100,27 +100,35 @@ cp .env.example .env
 
 Editá `.env` con las rutas de tu instalación de Piper:
 
+```
 PIPER_BIN=/home/tu_usuario/piper/piper/piper
 PIPER_MODEL=/home/tu_usuario/piper/models/es_AR-daniela-high.onnx
+PROMPT_SOURCE=hardcoded  # opciones: hardcoded | dynamic
+```
 
 ---
 
 ## Configuración del evento
 
-Editá los datos del evento en `app/main.py`:
+EVA soporta dos modos de configuración, controlados por la variable `PROMPT_SOURCE` en el `.env`.
 
-```python
-agent = SageAgent(
-    event_name="Nombre del evento",
-    event_location="Ubicación del venue",
-    event_date="Fecha del evento"
-)
+### Modo hardcoded (default — usado en la demo)
+
+El prompt se toma directamente de `app/prompts.py`. Es el modo estable para la demo de diciembre. No requiere ninguna configuración adicional.
+
+### Modo dynamic (preparado para producción)
+
+El prompt se construye automáticamente desde un JSON estructurado en `app/event_store.py`. Al arrancar, EVA llama a `get_current_event()`, construye el prompt con `prompt_builder.py` y se configura sola.
+
+Para activarlo, cambiá en `.env`:
+
+```
+PROMPT_SOURCE=dynamic
 ```
 
-La información del venue (baños, salidas de emergencia, salón principal, etc.) y los datos de los egresados se configuran en `app/prompts.py`.
+El evento se puede actualizar en runtime sin reiniciar el servidor via `POST /configure`.
 
 Los intents vectoriales (orientación, feedback, agenda, etc.) se configuran en `app/embeddings.py`.
-
 ---
 
 ## Correr el servidor
@@ -199,6 +207,23 @@ curl -s -X POST http://localhost:8000/tts \
   -H "Content-Type: application/json" \
   -d '{"texto": "Bienvenido al evento"}' \
   --output salida.wav && ls -lh salida.wav
+```
+
+### `GET /eventos/actual`
+Devuelve el JSON del evento actualmente configurado. Usado por el frontend y el equipo de back para verificar la configuración activa.
+```bash
+curl -s http://localhost:8000/eventos/actual | python3 -m json.tool
+```
+
+### `POST /configure`
+Recibe un JSON de evento, construye el prompt y reconfigura EVA en runtime sin reiniciar el servidor. Solo disponible cuando `PROMPT_SOURCE=dynamic`.
+```bash
+curl -s -X POST http://localhost:8000/configure \
+  -H "Content-Type: application/json" \
+  -d @mi_evento.json | python3 -m json.tool
+```
+```json
+{ "status": "EVA configurada para Tech Summit 2026" }
 ```
 
 ### `POST /reset`
@@ -296,9 +321,11 @@ sage-agent/
     ├── main.py          # API FastAPI, endpoints y configuración del evento
     ├── agent.py         # Lógica del agente, sesión y warm-up
     ├── embeddings.py    # Intent matching vectorial con nomic-embed-text
-    ├── prompts.py       # System prompt, venue y datos de egresados
-    ├── feedback.py      # Persistencia de feedback
-    └── test_embeddings.py  # Pruebas del sistema de embeddings
+    ├── prompts.py           # System prompt hardcodeado (modo demo)
+    ├── prompt_builder.py    # Construye el prompt desde un JSON estructurado
+    ├── event_store.py       # Persiste y expone el evento actual
+    ├── feedback.py          # Persistencia de feedback
+    └── test_embeddings.py   # Pruebas del sistema de embeddings
 ```
 
 ---
@@ -318,9 +345,12 @@ sage-agent/
 
 - [x] STT en el frontend con Web Speech API
 - [x] TTS con Piper TTS — voz Daniela (español argentino)
+- [x] prompt_builder.py — generación de prompt desde JSON estructurado
+- [x] event_store.py — persistencia del evento activo
+- [x] Endpoints /eventos/actual y /configure para reconfiguración en runtime
+- [ ] Conectar /configure a la API de gestión cuando el equipo back lo tenga disponible
 - [ ] Reemplazar feedback_log.json por llamada a API de Analítica
 - [ ] Endpoint de bienvenida personalizada por QR
-- [ ] Integración con API de eventos del equipo back
 
 ---
 
