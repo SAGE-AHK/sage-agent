@@ -11,6 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from prompt_builder import build_prompt
+from event_store import get_current_event, save_event
+from prompts import get_prompt
 
 from agent import SageAgent
 load_dotenv()
@@ -41,14 +44,23 @@ app.add_middleware(
 
 agent = None
 
+PROMPT_SOURCE = os.getenv("PROMPT_SOURCE", "hardcoded")
+
 @app.on_event("startup")
 async def startup():
     global agent
-    agent = SageAgent(
-        event_name="Entrega de Diplomas AHK 2026",
-        event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
-        event_date="15 de Agosto de 2026"
-    )
+    if PROMPT_SOURCE == "dynamic":
+        print("[EVA] Usando prompt dinámico desde event_store")
+        event_data = get_current_event()
+        system_prompt = build_prompt(event_data)
+    else:
+        print("[EVA] Usando prompt hardcodeado desde prompts.py")
+        system_prompt = get_prompt(
+            event_name="Entrega de Diplomas AHK 2026",
+            event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
+            event_date="15 de Agosto de 2026"
+        )
+    agent = SageAgent(system_prompt=system_prompt)
     await warmup_piper()
 
 async def warmup_piper():
@@ -141,6 +153,20 @@ PIPER_MODEL = os.getenv("PIPER_MODEL", "/home/martin/piper/models/es_AR-daniela-
 
 class TTSRequest(BaseModel):
     texto: str
+
+@app.get("/eventos/actual")
+def get_evento_actual():
+    return get_current_event()
+
+@app.post("/configure")
+async def configure(event_data: dict):
+    global agent
+    save_event(event_data)
+    new_prompt = build_prompt(event_data)
+    agent = SageAgent(system_prompt=new_prompt)
+    threading.Thread(target=warmup_piper).start()
+    print(f"[EVA] Reconfigurada para: {event_data.get('nombre', '')}")
+    return {"status": f"EVA configurada para {event_data.get('nombre', '')}"}
 
 @app.post("/tts")
 async def tts(request: TTSRequest):

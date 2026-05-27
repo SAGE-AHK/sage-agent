@@ -1,6 +1,5 @@
 import requests
 import uuid
-from prompts import get_prompt
 from feedback import save_feedback
 from embeddings import IntentMatcher
 
@@ -44,8 +43,8 @@ JAILBREAK_RESPONSES = {
 }
 
 class SageAgent:
-    def __init__(self, event_name: str, event_location: str, event_date: str):
-        self.system_prompt = get_prompt(event_name, event_location, event_date)
+    def __init__(self, system_prompt: str):
+        self.system_prompt = system_prompt
         self.history = []
         self.session_id = str(uuid.uuid4())
         self.matcher = IntentMatcher()
@@ -58,7 +57,7 @@ class SageAgent:
                 "model": MODEL,
                 "stream": False,
                 "options": {
-                    "num_predict": token_limit,
+                    "num_predict": TOKEN_LIMITS["simple"],
                     "temperature": 0.3,
                     "repeat_penalty": 1.1,
                 },
