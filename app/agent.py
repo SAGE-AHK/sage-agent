@@ -3,6 +3,7 @@ import uuid
 from feedback import save_feedback
 from embeddings import IntentMatcher
 import os
+import threading
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
@@ -49,7 +50,7 @@ class SageAgent:
         self.history = []
         self.session_id = str(uuid.uuid4())
         self.matcher = IntentMatcher()
-        self._warm_up()
+        threading.Thread(target=self._warm_up, daemon=True).start()
 
     def _warm_up(self):
         print("[EVA] Warm-up iniciado...")

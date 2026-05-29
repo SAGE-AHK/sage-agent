@@ -61,7 +61,11 @@ async def startup():
             event_date="15 de Agosto de 2026"
         )
     agent = SageAgent(system_prompt=system_prompt)
-    await warmup_piper()
+    threading.Thread(target=_background_warmup, daemon=True).start()
+
+def _background_warmup():
+    import asyncio
+    asyncio.run(warmup_piper())
 
 async def warmup_piper():
     try:
