@@ -2,9 +2,10 @@ import requests
 import uuid
 from feedback import save_feedback
 from embeddings import IntentMatcher
+import os
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "llama3.2:3b"
+MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 REQUEST_TIMEOUT = 30
 
 TOKEN_LIMITS = {
