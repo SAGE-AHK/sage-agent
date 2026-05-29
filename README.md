@@ -133,12 +133,24 @@ Los intents vectoriales (orientación, feedback, agenda, etc.) se configuran en 
 
 ## Correr el servidor
 
-### 1. Iniciar Ollama
+### Opción rápida — script de inicio
+
+Desde WSL2, en la raíz del repo:
+
+```bash
+./run.sh
+```
+
+El script verifica si Ollama ya está corriendo, lo inicia si hace falta, y levanta la API automáticamente.
+
+### Manual
+
+#### 1. Iniciar Ollama
 ```bash
 ollama serve &
 ```
 
-### 2. Iniciar la API
+#### 2. Iniciar la API
 ```bash
 cd app
 python3 -m uvicorn main:app --reload --port 8000
