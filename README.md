@@ -13,7 +13,7 @@ EVA es el módulo de asistente conversacional del sistema SAGE. Se encarga de re
 | Framework API | FastAPI | 0.100+ |
 | Servidor ASGI | Uvicorn | 0.20+ |
 | Modelo LLM | Ollama | latest |
-| Modelo de lenguaje | llama3.2:3b | — |
+| Modelo de lenguaje | llama3.2:3b (configurable) | — |
 | Modelo de embeddings | nomic-embed-text | — |
 | TTS | Piper TTS | 2023.11.14-2 |
 | Modelo de voz | es_AR-daniela-high | — |
@@ -103,7 +103,8 @@ Editá `.env` con las rutas de tu instalación de Piper:
 ```
 PIPER_BIN=/home/tu_usuario/piper/piper/piper
 PIPER_MODEL=/home/tu_usuario/piper/models/es_AR-daniela-high.onnx
-PROMPT_SOURCE=hardcoded  # opciones: hardcoded | dynamic
+PROMPT_SOURCE=hardcoded   # opciones: hardcoded | dynamic
+OLLAMA_MODEL=llama3.2:3b  # opciones: llama3.2:3b
 ```
 
 ---
