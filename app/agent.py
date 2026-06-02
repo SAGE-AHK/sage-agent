@@ -5,9 +5,10 @@ from embeddings import IntentMatcher
 import os
 import threading
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/chat"
 MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
-REQUEST_TIMEOUT = 30
+REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "30"))
 
 TOKEN_LIMITS = {
     "lista": 400,
