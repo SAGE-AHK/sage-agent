@@ -1,3 +1,8 @@
+from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import asyncio
 import json
 import os
@@ -9,14 +14,11 @@ from fastapi.responses import FileResponse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from dotenv import load_dotenv
 from prompt_builder import build_prompt
 from event_store import get_current_event, save_event
 from prompts import get_prompt
 
 from agent import SageAgent
-load_dotenv()
 
 app = FastAPI(title="SAGE Agent API")
 
