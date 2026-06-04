@@ -104,6 +104,8 @@ def _resolve_chat_state(respuesta: str) -> str:
     )
     if respuesta.startswith(error_prefixes):
         return "error"
+    if respuesta.startswith("__FAREWELL__"):
+        return "despedida"
     return "hablando"
 
 @app.get("/")
@@ -113,10 +115,12 @@ def root():
 @app.post("/chat", response_model=MessageResponse)
 def chat(request: MessageRequest):
     respuesta = agent.chat(request.mensaje)
+    estado = _resolve_chat_state(respuesta)
+    respuesta_limpia = respuesta.replace("__FAREWELL__", "")
     return MessageResponse(
-        respuesta=respuesta,
+        respuesta=respuesta_limpia,
         historial_length=len(agent.history),
-        estado=_resolve_chat_state(respuesta),
+        estado=estado,
     )
 
 # El Stream nos permite enviar los estados de SPLINE de manera eficiente y sin bloquear la UI, es decir. Sin esto solo tendriamos las respuestas mientras esperamos a que termine de pensar el Ollama.
@@ -128,11 +132,13 @@ async def chat_stream(request: MessageRequest):
         try:
             respuesta = await asyncio.to_thread(agent.chat, request.mensaje)
             estado = _resolve_chat_state(respuesta)
+            respuesta_limpia = respuesta.replace("__FAREWELL__", "")
             yield _json_sse(
                 {
                     "estado": estado,
-                    "respuesta": respuesta,
+                    "respuesta": respuesta_limpia,
                     "historial_length": len(agent.history),
+                    "cerrar_sesion": estado == "despedida",
                 }
             )
         except Exception:
