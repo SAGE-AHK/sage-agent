@@ -63,11 +63,19 @@ INTENTS = {
         "como tengo que venir vestido", "código de vestimenta",
         "ropa", "formal", "smart casual", "que me pongo"
     ],
+    "despedida": [
+    "chau", "hasta luego", "nos vemos", "me voy",
+    "hasta pronto", "adiós", "adios", "bye",
+    "muchas gracias chau", "gracias hasta luego",
+    "eso era todo gracias", "listo gracias",
+    "ya está gracias", "nada más gracias",
+    ],
 }
 
 THRESHOLD_DEFAULT = 0.78
 THRESHOLD_BY_INTENT = {
     "feedback": 0.82,
+    "despedida": 0.85,
 }
 
 def get_embedding(text: str) -> list[float]:

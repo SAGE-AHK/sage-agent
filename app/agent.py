@@ -45,6 +45,8 @@ JAILBREAK_RESPONSES = {
     "fabrication":  "Solo puedo darte información real del evento. ¿Tenés alguna consulta?",
 }
 
+FAREWELL_MESSAGE = "¡Hasta luego! Fue un placer atenderte. Que disfrutes el evento."
+
 class SageAgent:
     def __init__(self, system_prompt: str):
         self.system_prompt = system_prompt
@@ -99,8 +101,14 @@ class SageAgent:
             return blocked
 
         intent, score = self.matcher.match(user_message)
+        print(f"[EVA] Intent: {intent} ({score:.3f})")
+
+        if intent == "despedida":
+            self.history = []
+            self.session_id = str(uuid.uuid4())
+            return f"__FAREWELL__{FAREWELL_MESSAGE}"
+
         token_limit = self._get_token_limit(intent)
-        print(f"[EVA] Intent: {intent} ({score:.3f}) — tokens: {token_limit}")
 
         self.history.append({"role": "user", "content": user_message})
 
