@@ -31,7 +31,7 @@ DEFAULT_CORS_ORIGINS = [
 
 TTS_REPLACEMENTS = {
     # Nombres del sistema / evento
-    "SAGE": "Séich",
+    "SAGE": "Séish",
     "sistema SAGE": "sistema Séich",
     "proyecto SAGE": "proyecto Séich",
     "EVA": "Éva",

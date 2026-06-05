@@ -13,7 +13,7 @@ REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "30"))
 TOKEN_LIMITS = {
     "lista": 400,
     "detalle": 250,
-    "simple": 150,
+    "simple": 250,
 }
 
 INTENT_TOKEN_LIMITS = {
@@ -57,25 +57,36 @@ class SageAgent:
 
     def _warm_up(self):
         print("[EVA] Warm-up iniciado...")
-        try:
-            payload = {
-                "model": MODEL,
-                "stream": False,
-                "options": {
-                    "num_predict": TOKEN_LIMITS["simple"],
-                    "temperature": 0.3,
-                    "repeat_penalty": 1.1,
-                },
-                "messages": [
-                    {"role": "system", "content": self.system_prompt},
-                    *self.history
-                ]
-            }
-            response = requests.post(OLLAMA_URL, json=payload, timeout=60)
-            response.raise_for_status()
-            print("[EVA] Warm-up completado. Modelo listo.")
-        except Exception as e:
-            print(f"[EVA] Warm-up falló: {e}")
+        max_retries = 5
+        retry_delay = 5
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                payload = {
+                    "model": MODEL,
+                    "stream": False,
+                    "options": {
+                        "num_predict": TOKEN_LIMITS["simple"],
+                        "temperature": 0.3,
+                        "repeat_penalty": 1.1,
+                    },
+                    "messages": [
+                        {"role": "system", "content": self.system_prompt},
+                        {"role": "user", "content": "hola"},
+                    ]
+                }
+                response = requests.post(OLLAMA_URL, json=payload, timeout=60)
+                response.raise_for_status()
+                print("[EVA] Warm-up completado. Modelo listo.")
+                return
+            except Exception as e:
+                print(f"[EVA] Warm-up intento {attempt}/{max_retries} falló: {e}")
+                if attempt < max_retries:
+                    print(f"[EVA] Reintentando en {retry_delay} segundos...")
+                    import time
+                    time.sleep(retry_delay)
+
+        print("[EVA] Warm-up falló después de todos los intentos. El modelo se calentará con el primer mensaje real.")
 
     def _check_jailbreak(self, message: str) -> str | None:
         for jailbreak_type, phrases in JAILBREAK_INTENTS.items():

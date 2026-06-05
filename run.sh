@@ -23,7 +23,7 @@ if [ "$START_OLLAMA" = "true" ]; then
     if ! pgrep -x "ollama" > /dev/null; then
         echo "[SAGE] Iniciando Ollama..."
         ollama serve &
-        sleep 2
+        sleep 5
     else
         echo "[SAGE] Ollama ya está corriendo."
     fi
