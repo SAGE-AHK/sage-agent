@@ -2,7 +2,7 @@ import requests
 import uuid
 from prompts import get_prompt
 from feedback import save_feedback
-from embeddings import IntentMatcher
+from embeddings import IntentMatcher, get_feedback_detector
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODEL = "llama3.2:3b"
@@ -82,20 +82,20 @@ class SageAgent:
         return None
 
     def _get_token_limit(self, intent: str | None) -> int:
-        if intent in INTENT_TOKEN_LIMITS:
+        if intent in INTENT_TOKEN_LIMITS: #obtiene la cantidad de límite de tokens según el intent (=según el tipo de frase)
             return TOKEN_LIMITS[INTENT_TOKEN_LIMITS[intent]]
         return TOKEN_LIMITS["simple"]
 
     def chat(self, user_message: str) -> str:
-        blocked = self._check_jailbreak(user_message)
+        blocked = self._check_jailbreak(user_message) #si es jailbreak devuelve un mensaje hardcodeado, si no, devuelve None
         if blocked:
             return blocked
 
-        intent, score = self.matcher.match(user_message)
-        token_limit = self._get_token_limit(intent)
-        print(f"[EVA] Intent: {intent} ({score:.3f}) — tokens: {token_limit}")
+        intent, score = self.matcher.match(user_message) #obtiene los mejores "intent" (=tipo de frase) y "score" (=valor calculado)
+        token_limit = self._get_token_limit(intent) #e le ingresa el tipo de frase
+        print(f"[EVA] Intent: {intent} ({score:.3f}) — tokens: {token_limit}") #printea el tipo de frase, el score obtenido y la cantidad de tokens
 
-        self.history.append({"role": "user", "content": user_message})
+        self.history.append({"role": "user", "content": user_message}) #suma al historial de conversación el mensaje del usuario
 
         payload = {
             "model": MODEL,
@@ -119,8 +119,11 @@ class SageAgent:
             print(f"[EVA] Error en chat: {e}")
             return "Hubo un problema al procesar tu mensaje. Enseguida consulto con el equipo."
 
-        if intent == "feedback":
-            save_feedback(self.session_id, user_message, assistant_message, category=intent)
+        # in chat():
+        detector = get_feedback_detector()  # already a singleton, no cost
+        is_fb, _ = detector.is_feedback(user_message)
+        if is_fb:
+            save_feedback(self.session_id, user_message, assistant_message, category="feedback")
 
         self.history.append({"role": "assistant", "content": assistant_message})
         return assistant_message
@@ -129,3 +132,5 @@ class SageAgent:
         self.history = []
         self.session_id = str(uuid.uuid4())
         self._warm_up()
+
+
