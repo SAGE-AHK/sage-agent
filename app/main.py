@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from prompt_builder import build_prompt
 from event_store import get_current_event, save_event
 from prompts import get_prompt
+import re 
 
 from agent import SageAgent
 
@@ -27,6 +28,52 @@ DEFAULT_CORS_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+
+TTS_REPLACEMENTS = {
+    # Nombres del sistema / evento
+    "SAGE": "Séich",
+    "sistema SAGE": "sistema Séich",
+    "proyecto SAGE": "proyecto Séich",
+    "EVA": "Éva",
+    "AHK": "a hache ká",
+    # Carreras / áreas
+    "Data Science": "Data Sáians",
+    "Sistemas IT": "Sistemas ai tí",
+    "IT": "ai tí",
+    "Frontend": "Frónt end",
+    "Backend": "Bák end",
+    # Identidad de EVA
+    "Event Virtual Assistant": "Ivént Vírchual Asístent",
+    # Evento / experiencia del invitado
+    "feedback": "fídbak",
+    "networking": "nétworking",
+    "catering": "kéiterin",
+    "smart casual": "smart cáshual",
+    # Tecnología / proyecto
+    "API": "a pe i",
+    "QR": "cu erre",
+    "QRs": "cu erres",
+    "dashboard": "dáshbord",
+    "emails": "í-meils",
+    "bug": "bág",
+    "stack": "sták",
+    "baseline": "béis lain",
+    "pipeline": "pái pláin",
+    "speech-to-text": "spích tu tékst",
+    "text-to-speech": "tékst tu spích",
+    "heatmaps": "jít maps",
+    "script": "skript",
+    # Hobbies / términos menores
+    "running": "ráning",
+    "indie": "índi",
+    "podcasts": "pódcasts",
+}
+
+def preprocess_tts(text: str) -> str:
+    for original, replacement in TTS_REPLACEMENTS.items():
+        pattern = re.compile(re.escape(original), re.IGNORECASE)
+        text = pattern.sub(replacement, text)
+    return text
 
 
 def _get_cors_origins() -> list[str]:
@@ -185,9 +232,10 @@ async def tts(request: TTSRequest):
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
         output_path = f.name
 
+    texto_procesado = preprocess_tts(request.texto)
     process = subprocess.run(
         [PIPER_BIN, "--model", PIPER_MODEL, "--output_file", output_path],
-        input=request.texto.encode(),
+        input=texto_procesado.encode(),
         capture_output=True
     )
 
