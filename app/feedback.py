@@ -2,8 +2,12 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
+import os
 
-FEEDBACK_FILE = Path(__file__).parent / "feedback_log.json"
+DATA_DIR = Path(os.getenv("SAGE_DATA_DIR", "/app/data"))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+FEEDBACK_FILE = DATA_DIR / "feedback_log.json"
 
 def save_feedback(session_id: str, user_message: str, eva_response: str, category: str = "general"):
     entry = {

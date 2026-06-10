@@ -1,7 +1,12 @@
 from pathlib import Path
 import json
+import os
 
-EVENT_FILE = Path(__file__).parent / "current_event.json"
+
+DATA_DIR = Path(os.getenv("SAGE_DATA_DIR", "/app/data"))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+EVENT_FILE = DATA_DIR / "current_event.json"
 
 DEFAULT_EVENT = {
     "id": "ahk-2026",
