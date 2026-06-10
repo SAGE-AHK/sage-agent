@@ -1,8 +1,12 @@
 import requests
 import math
+import os
 
-OLLAMA_URL = "http://localhost:11434/api/embed"
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/embed"
+
 EMBED_MODEL = "nomic-embed-text"
+REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "30"))
 
 INTENTS = {
     "orientacion_banos": [
@@ -79,12 +83,25 @@ THRESHOLD_BY_INTENT = {
 }
 
 def get_embedding(text: str) -> list[float]:
-    response = requests.post(OLLAMA_URL, json={
-        "model": EMBED_MODEL,
-        "input": text
-    })
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": EMBED_MODEL,
+            "input": text,
+        },
+        timeout=REQUEST_TIMEOUT,
+    )
+
     response.raise_for_status()
-    return response.json()["embeddings"][0]
+    data = response.json()
+
+    if "embeddings" in data and data["embeddings"]:
+        return data["embeddings"][0]
+
+    if "embedding" in data:
+        return data["embedding"]
+
+    raise RuntimeError(f"Respuesta inesperada de Ollama embeddings: {data}")
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))

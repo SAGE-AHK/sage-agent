@@ -11,7 +11,7 @@ from typing import AsyncIterator
 import subprocess
 import tempfile
 from fastapi.responses import FileResponse
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from prompt_builder import build_prompt
@@ -240,8 +240,14 @@ async def tts(request: TTSRequest):
     )
 
     if process.returncode != 0:
-        return {"error": "TTS falló"}
-
+        stderr = process.stderr.decode(errors="replace")
+        stdout = process.stdout.decode(errors="replace")
+        print(f"[EVA TTS] Piper falló. stdout={stdout} stderr={stderr}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"TTS falló: {stderr or stdout or 'sin detalle'}"
+        )
+    
     return FileResponse(
         output_path,
         media_type="audio/wav",
