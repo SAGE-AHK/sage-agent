@@ -5,7 +5,7 @@ import os
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
 OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/embed"
 
-EMBED_MODEL = "nomic-embed-text"
+EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "30"))
 
 INTENTS = {
