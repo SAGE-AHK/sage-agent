@@ -4,8 +4,8 @@ services:
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped
-    logging:
-      driver: "none"
+    # logging:
+    #   driver: "none"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-4}
@@ -19,13 +19,13 @@ services:
       timeout: 10s
       retries: 10
       start_period: 15s
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   # — sage-agent — API FastAPI + Piper TTS
 
