@@ -704,7 +704,7 @@ Para despliegues con múltiples tótems, el frontend debería tener configurados
 VITE_API_PROXY_TARGET=http://IP_DEL_BACKEND:8000
 VITE_EVA_ROL=recepcionista
 VITE_TOTEM_ID=totem-A
----
+```
 
 ## Uso de GPU
 
