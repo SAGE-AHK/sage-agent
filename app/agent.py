@@ -48,15 +48,16 @@ JAILBREAK_RESPONSES = {
 FAREWELL_MESSAGE = "¡Hasta luego! Fue un placer atenderte. Que disfrutes el evento."
 
 class SageAgent:
-    def __init__(self, system_prompt: str):
+    def __init__(self, system_prompt: str, matcher: IntentMatcher | None = None, rol: str = "asistente"):
         self.system_prompt = system_prompt
+        self.rol = rol
         self.history = []
         self.session_id = str(uuid.uuid4())
-        self.matcher = IntentMatcher()
+        self.matcher = matcher if matcher is not None else IntentMatcher()
         threading.Thread(target=self._warm_up, daemon=True).start()
 
     def _warm_up(self):
-        print("[EVA] Warm-up iniciado...")
+        print(f"[EVA] Warm-up iniciado — rol={self.rol}...")
         max_retries = 5
         retry_delay = 5
 
@@ -77,16 +78,16 @@ class SageAgent:
                 }
                 response = requests.post(OLLAMA_URL, json=payload, timeout=60)
                 response.raise_for_status()
-                print("[EVA] Warm-up completado. Modelo listo.")
+                print(f"[EVA] Warm-up completado — rol={self.rol}. Modelo listo.")
                 return
             except Exception as e:
-                print(f"[EVA] Warm-up intento {attempt}/{max_retries} falló: {e}")
+                print(f"[EVA] Warm-up intento {attempt}/{max_retries} falló (rol={self.rol}): {e}")
                 if attempt < max_retries:
                     print(f"[EVA] Reintentando en {retry_delay} segundos...")
                     import time
                     time.sleep(retry_delay)
 
-        print("[EVA] Warm-up falló después de todos los intentos. El modelo se calentará con el primer mensaje real.")
+        print(f"[EVA] Warm-up falló después de todos los intentos (rol={self.rol}). El modelo se calentará con el primer mensaje real.")
 
     def _check_jailbreak(self, message: str) -> str | None:
         for jailbreak_type, phrases in JAILBREAK_INTENTS.items():
@@ -112,7 +113,7 @@ class SageAgent:
             return blocked
 
         intent, score = self.matcher.match(user_message)
-        print(f"[EVA] Intent: {intent} ({score:.3f})")
+        print(f"[EVA] [{self.rol}] Intent: {intent} ({score:.3f})")
 
         if intent == "despedida":
             self.history = []
@@ -146,11 +147,11 @@ class SageAgent:
             return "Disculpá, tardé demasiado en responder. ¿Podés repetirme tu pregunta?"
         except Exception as e:
             self.history.pop()
-            print(f"[EVA] Error en chat: {e}")
+            print(f"[EVA] Error en chat (rol={self.rol}): {e}")
             return "Hubo un problema al procesar tu mensaje. Enseguida consulto con el equipo."
 
         if intent == "feedback":
-            save_feedback(self.session_id, user_message, assistant_message, category=intent)
+            save_feedback(self.session_id, user_message, assistant_message, category=intent, rol=self.rol)
 
         self.history.append({"role": "assistant", "content": assistant_message})
         return assistant_message

@@ -19,13 +19,13 @@ services:
       timeout: 10s
       retries: 10
       start_period: 15s
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
 
   # — sage-agent — API FastAPI + Piper TTS
 

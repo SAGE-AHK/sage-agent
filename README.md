@@ -334,41 +334,264 @@ Si el archivo aparece como `JSON text data`, Piper falló y el backend devolvió
 
 ---
 
-## Endpoints
+## Multisesión y roles
 
-### `GET /`
+EVA soporta múltiples sesiones conversacionales usando un único backend y un único modelo de lenguaje. Esto permite correr varios tótems en simultáneo sin mezclar historiales de conversación.
 
-Healthcheck básico.
+Cada sesión se identifica por la combinación:
 
-```bash
-curl -s http://localhost:8000/ | python3 -m json.tool
+```text
+rol:totem_id
 ```
 
-### `POST /chat`
+Ejemplos:
 
-Envía un mensaje a EVA.
+```text
+asistente:default
+recepcionista:totem-A
+asistente:totem-2
+```
+
+### Campos de sesión
+
+| Campo      | Obligatorio | Default     | Descripción                                                                  |
+| ---------- | ----------: | ----------- | ---------------------------------------------------------------------------- |
+| `mensaje`  |          Sí | -           | Texto enviado por el invitado.                                               |
+| `rol`      |          No | `asistente` | Rol lógico de EVA. Actualmente soporta `asistente` y `recepcionista`.        |
+| `totem_id` |          No | `default`   | Identificador del tótem o instancia física/visual que está hablando con EVA. |
+
+Si no se envían `rol` ni `totem_id`, el backend usa:
+
+```text
+rol=asistente
+totem_id=default
+```
+
+Esto mantiene compatibilidad con clientes viejos o pruebas rápidas por `curl`.
+
+### Roles disponibles
+
+
+| Rol             | Uso esperado                                                                                 | Estado actual                                |
+| --------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `recepcionista` | EVA ubicada en la entrada, orientada a bienvenida, acreditación e ingreso.                   | Usa comportamiento similar al asistente.     |
+| `asistente`     | EVA ubicada dentro del evento, orientada a consultas generales, ubicación, agenda y soporte. | Usa comportamiento similar al recepcionista. |
+
+Por ahora ambos roles responden de igual forma. La separación existe a nivel de API y sesiones para que, más adelante, cada rol tenga su propio prompt, reglas de comportamiento, prioridades e intents específicos.
+
+### Historial aislado por sesión
+
+Cada combinación `rol + totem_id` mantiene su propio historial. Esto significa que una conversación en:
+
+```text
+recepcionista:totem-A
+```
+
+no contamina ni modifica el contexto de:
+
+```text
+asistente:totem-2
+```
+
+### Ejemplos de uso
+
+#### Chat legacy / default
 
 ```bash
 curl -s -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{"mensaje":"Hola buenas tardes"}' | python3 -m json.tool
+  -d '{"mensaje":"hola"}' | python3 -m json.tool
 ```
 
-### `POST /chat/stream`
+Usa automáticamente:
 
-Versión streaming SSE usada por el frontend.
+```text
+asistente:default
+```
+
+#### Chat con recepcionista
+
+```bash
+curl -s -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"mensaje":"hola","rol":"recepcionista","totem_id":"totem-A"}' | python3 -m json.tool
+```
+
+Crea o reutiliza la sesión:
+
+```text
+recepcionista:totem-A
+```
+
+#### Chat con asistente de otro tótem
+
+```bash
+curl -s -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"mensaje":"donde estan los baños?","rol":"asistente","totem_id":"totem-2"}' | python3 -m json.tool
+```
+
+Crea o reutiliza la sesión:
+
+```text
+asistente:totem-2
+```
+
+### Listar sesiones activas
+
+```bash
+curl -s http://localhost:8000/sesiones | python3 -m json.tool
+```
+
+Respuesta esperada:
+
+```json
+{
+  "sesiones": [
+    {
+      "key": "asistente:default",
+      "rol": "asistente",
+      "historial_length": 2
+    },
+    {
+      "key": "recepcionista:totem-A",
+      "rol": "recepcionista",
+      "historial_length": 2
+    },
+    {
+      "key": "asistente:totem-2",
+      "rol": "asistente",
+      "historial_length": 2
+    }
+  ]
+}
+```
+
+### Resetear una sesión puntual
+
+El endpoint `/reset` reinicia solo la sesión indicada. No borra todas las sesiones.
+
+```bash
+curl -s -X POST "http://localhost:8000/reset?rol=recepcionista&totem_id=totem-A" | python3 -m json.tool
+```
+
+Respuesta esperada:
+
+```json
+{
+  "status": "Sesión 'recepcionista:totem-A' reiniciada, warm-up en proceso"
+}
+```
+
+Si no se envían parámetros, se resetea la sesión default:
+
+```text
+asistente:default
+```
+
+```bash
+curl -s -X POST http://localhost:8000/reset | python3 -m json.tool
+```
+
+### Streaming SSE con sesión
+
+`/chat/stream` acepta los mismos campos que `/chat`:
 
 ```bash
 curl -N -X POST http://localhost:8000/chat/stream \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
-  -d '{"mensaje":"¿Dónde es la ceremonia?"}'
+  -d '{"mensaje":"¿Dónde es la acreditación?","rol":"recepcionista","totem_id":"totem-A"}'
+```
+
+### Consideraciones para frontend / tótems
+
+Cada tótem debería enviar siempre un `totem_id` fijo y estable. Por ejemplo:
+
+```env
+VITE_EVA_ROL=recepcionista
+VITE_TOTEM_ID=totem-A
+```
+
+o:
+
+```env
+VITE_EVA_ROL=asistente
+VITE_TOTEM_ID=totem-2
+```
+
+El frontend debe incluir esos valores en cada request a `/chat` o `/chat/stream`.
+
+Ejemplo de body enviado por el frontend:
+
+```json
+{
+  "mensaje": "Hola, ¿dónde me acredito?",
+  "rol": "recepcionista",
+  "totem_id": "totem-A"
+}
+```
+
+### Consideraciones para rack / producción
+
+* Varios tótems pueden apuntar al mismo backend.
+* Todos los tótems comparten el mismo servicio de Ollama.
+* El aislamiento conversacional lo maneja el backend mediante `rol:totem_id`.
+* El modelo se carga una sola vez en Ollama.
+* Cada sesión mantiene su propio historial en memoria.
+* Reiniciar el container del backend borra las sesiones activas en memoria.
+* Reiniciar una sesión con `/reset` solo afecta esa combinación puntual de `rol` y `totem_id`.
+
+### Futuro comportamiento por rol
+
+La separación por `rol` ya está implementada para permitir que más adelante cada tipo de EVA tenga comportamiento propio.
+
+Posibles diferencias futuras:
+
+| Rol             | Prompt futuro                                                                                          | Prioridades futuras                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| `recepcionista` | Más orientado a bienvenida, acreditación, ingreso, validación inicial y derivación.                    | Respuestas cortas, ingreso rápido, indicaciones claras.  |
+| `asistente`     | Más orientado a orientación dentro del evento, agenda, baños, salones, feedback y consultas generales. | Más contexto del evento, soporte durante la experiencia. |
+
+Cuando se implementen prompts separados, la API no debería cambiar: los clientes seguirán enviando `rol` y `totem_id`.
+
+
+## Endpoints
+
+### `GET /`
+Healthcheck básico.
+```bash
+curl -s http://localhost:8000/ | python3 -m json.tool
+```
+
+### `POST /chat`
+Envía un mensaje a EVA. Los campos `rol` y `totem_id` son opcionales — sin
+ellos se usa `rol=asistente` y `totem_id=default` (comportamiento de hoy).
+Cada combinación `rol + totem_id` mantiene su propia conversación, permitiendo
+varios tótems —incluso del mismo rol— corriendo en simultáneo sobre el mismo modelo.
+```bash
+curl -s -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"mensaje":"Hola buenas tardes"}' | python3 -m json.tool
+
+# Con rol y tótem explícitos:
+curl -s -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"mensaje":"Hola","rol":"recepcionista","totem_id":"totem-A"}' | python3 -m json.tool
+```
+
+### `POST /chat/stream`
+Versión streaming SSE usada por el frontend. Acepta los mismos campos
+`rol` y `totem_id` que `/chat`.
+```bash
+curl -N -X POST http://localhost:8000/chat/stream \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{"mensaje":"¿Dónde es la ceremonia?","rol":"asistente","totem_id":"totem-2"}'
 ```
 
 ### `POST /tts`
-
 Convierte texto a WAV con Piper.
-
 ```bash
 curl -X POST http://localhost:8000/tts \
   -H "Content-Type: application/json" \
@@ -377,17 +600,15 @@ curl -X POST http://localhost:8000/tts \
 ```
 
 ### `GET /eventos/actual`
-
 Devuelve el evento activo.
-
 ```bash
 curl -s http://localhost:8000/eventos/actual | python3 -m json.tool
 ```
 
 ### `POST /configure`
-
-Reconfigura EVA en runtime cuando `PROMPT_SOURCE=dynamic`.
-
+Reconfigura EVA en runtime cuando `PROMPT_SOURCE=dynamic`. Invalida todas las
+sesiones activas — la próxima vez que cada tótem mande un mensaje, su sesión
+se recrea con el prompt nuevo.
 ```bash
 curl -s -X POST http://localhost:8000/configure \
   -H "Content-Type: application/json" \
@@ -395,14 +616,21 @@ curl -s -X POST http://localhost:8000/configure \
 ```
 
 ### `POST /reset`
-
-Reinicia la sesión conversacional.
-
+Reinicia una sesión conversacional puntual. `rol` y `totem_id` van como
+query params — sin ellos, resetea `asistente:default`.
 ```bash
 curl -s -X POST http://localhost:8000/reset | python3 -m json.tool
+
+# Resetear solo el recepcionista del tótem A:
+curl -s -X POST "http://localhost:8000/reset?rol=recepcionista&totem_id=totem-A" | python3 -m json.tool
 ```
 
----
+### `GET /sesiones`
+Lista todas las sesiones activas — rol, tótem e historial — útil para
+verificar en el día del rack que cada tótem quedó aislado correctamente.
+```bash
+curl -s http://localhost:8000/sesiones | python3 -m json.tool
+```
 
 ## Configuración del evento
 
@@ -470,6 +698,12 @@ Recordar agregar el origen del frontend en `CORS_ORIGINS` del backend. Ejemplo:
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://192.168.1.50:5173
 ```
 
+Para despliegues con múltiples tótems, el frontend debería tener configurados un rol y un identificador estable de tótem:
+
+```env
+VITE_API_PROXY_TARGET=http://IP_DEL_BACKEND:8000
+VITE_EVA_ROL=recepcionista
+VITE_TOTEM_ID=totem-A
 ---
 
 ## Uso de GPU
@@ -623,6 +857,12 @@ sage-agent/
 - [x] Agregar `piper-init` para descargar voz Piper automáticamente.
 - [x] Usar `/api/embed` para embeddings de Ollama.
 - [x] Evitar montar volúmenes sobre `/app/app`.
+- [x] Soportar múltiples sesiones conversacionales por `rol:totem_id`.
+- [x] Agregar endpoint `GET /sesiones` para debug operativo.
+- [x] Permitir reset puntual por `rol` y `totem_id`.
+- [ ] Separar prompts específicos para `recepcionista` y `asistente`.
+- [ ] Hacer que el frontend envíe `rol` y `totem_id` desde variables de entorno.
+- [ ] Persistir o monitorear sesiones si se necesita trazabilidad post-evento.
 - [ ] Devolver `500` en `/tts` si Piper falla, no `200` con JSON.
 - [ ] Persistir `feedback_log.json` y `current_event.json` en `/app/data`.
 - [ ] Validar GPU real en rack con NVIDIA Container Toolkit.

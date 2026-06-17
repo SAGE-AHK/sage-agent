@@ -17,39 +17,32 @@ from fastapi.responses import StreamingResponse
 from prompt_builder import build_prompt
 from event_store import get_current_event, save_event
 from prompts import get_prompt
-import re 
-
-from agent import SageAgent
+from agent_manager import AgentManager, normalize_rol, normalize_totem_id
+import re
 
 app = FastAPI(title="SAGE Agent API")
 
-# El CORS nos permite intercomunicarnos con el FrontEnd por el navegador de manera profesional y segura.
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
 TTS_REPLACEMENTS = {
-    # Nombres del sistema / evento
     "SAGE": "Séish",
     "sistema SAGE": "sistema Séich",
     "proyecto SAGE": "proyecto Séich",
     "EVA": "Éva",
     "AHK": "a hache ká",
-    # Carreras / áreas
     "Data Science": "Data Sáians",
     "Sistemas IT": "Sistemas ai tí",
     "IT": "ai tí",
     "Frontend": "Frónt end",
     "Backend": "Bák end",
-    # Identidad de EVA
     "Event Virtual Assistant": "Ivént Vírchual Asístent",
-    # Evento / experiencia del invitado
     "feedback": "fídbak",
     "networking": "nétworking",
     "catering": "kéiterin",
     "smart casual": "smart cáshual",
-    # Tecnología / proyecto
     "API": "a pe i",
     "QR": "cu erre",
     "QRs": "cu erres",
@@ -63,7 +56,6 @@ TTS_REPLACEMENTS = {
     "text-to-speech": "tékst tu spích",
     "heatmaps": "jít maps",
     "script": "skript",
-    # Hobbies / términos menores
     "running": "ráning",
     "indie": "índi",
     "podcasts": "pódcasts",
@@ -91,25 +83,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-agent = None
-
 PROMPT_SOURCE = os.getenv("PROMPT_SOURCE", "hardcoded")
+
+def resolve_prompt_for_role(rol: str) -> str:
+    """
+    Hoy todos los roles usan el mismo prompt. El día que el recepcionista
+    necesite uno distinto, alcanza con ramificar por 'rol' acá.
+    """
+    if PROMPT_SOURCE == "dynamic":
+        event_data = get_current_event()
+        return build_prompt(event_data)
+    return get_prompt(
+        event_name="Entrega de Diplomas AHK 2026",
+        event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
+        event_date="15 de Agosto de 2026"
+    )
+
+agent_manager: AgentManager | None = None
 
 @app.on_event("startup")
 async def startup():
-    global agent
-    if PROMPT_SOURCE == "dynamic":
-        print("[EVA] Usando prompt dinámico desde event_store")
-        event_data = get_current_event()
-        system_prompt = build_prompt(event_data)
-    else:
-        print("[EVA] Usando prompt hardcodeado desde prompts.py")
-        system_prompt = get_prompt(
-            event_name="Entrega de Diplomas AHK 2026",
-            event_location="Centro de Convenciones, Av. Corrientes, Buenos Aires",
-            event_date="15 de Agosto de 2026"
-        )
-    agent = SageAgent(system_prompt=system_prompt)
+    global agent_manager
+    print(f"[EVA] PROMPT_SOURCE={PROMPT_SOURCE}")
+    agent_manager = AgentManager(prompt_resolver=resolve_prompt_for_role)
+    agent_manager.get_agent(rol="asistente", totem_id="default")
     threading.Thread(target=_background_warmup, daemon=True).start()
 
 def _background_warmup():
@@ -133,13 +130,14 @@ async def warmup_piper():
 
 class MessageRequest(BaseModel):
     mensaje: str
+    rol: str = "asistente"
+    totem_id: str = "default"
 
 class MessageResponse(BaseModel):
     respuesta: str
     historial_length: int
     estado: str
 
-# el SSE nos sirve para definir cómo van escritas en el Front las distintas respuestas del agente
 def _json_sse(payload: dict) -> str:
     return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
@@ -161,7 +159,11 @@ def root():
 
 @app.post("/chat", response_model=MessageResponse)
 def chat(request: MessageRequest):
-    respuesta = agent.chat(request.mensaje)
+    rol = normalize_rol(request.rol)
+    totem_id = normalize_totem_id(request.totem_id)
+    agent = agent_manager.get_agent(rol, totem_id)
+    with agent_manager.get_lock(rol, totem_id):
+        respuesta = agent.chat(request.mensaje)
     estado = _resolve_chat_state(respuesta)
     respuesta_limpia = respuesta.replace("__FAREWELL__", "")
     return MessageResponse(
@@ -170,14 +172,21 @@ def chat(request: MessageRequest):
         estado=estado,
     )
 
-# El Stream nos permite enviar los estados de SPLINE de manera eficiente y sin bloquear la UI, es decir. Sin esto solo tendriamos las respuestas mientras esperamos a que termine de pensar el Ollama.
-
 @app.post("/chat/stream")
 async def chat_stream(request: MessageRequest):
+    rol = normalize_rol(request.rol)
+    totem_id = normalize_totem_id(request.totem_id)
+    agent = agent_manager.get_agent(rol, totem_id)
+    lock = agent_manager.get_lock(rol, totem_id)
+
     async def event_generator() -> AsyncIterator[str]:
         yield _json_sse({"estado": "pensando"})
         try:
-            respuesta = await asyncio.to_thread(agent.chat, request.mensaje)
+            def _chat_locked():
+                with lock:
+                    return agent.chat(request.mensaje)
+
+            respuesta = await asyncio.to_thread(_chat_locked)
             estado = _resolve_chat_state(respuesta)
             respuesta_limpia = respuesta.replace("__FAREWELL__", "")
             yield _json_sse(
@@ -219,13 +228,15 @@ def get_evento_actual():
 
 @app.post("/configure")
 async def configure(event_data: dict):
-    global agent
     save_event(event_data)
-    new_prompt = build_prompt(event_data)
-    agent = SageAgent(system_prompt=new_prompt)
+    agent_manager.invalidate_all()
     threading.Thread(target=warmup_piper).start()
     print(f"[EVA] Reconfigurada para: {event_data.get('nombre', '')}")
     return {"status": f"EVA configurada para {event_data.get('nombre', '')}"}
+
+@app.get("/sesiones")
+def sesiones():
+    return {"sesiones": agent_manager.status()}
 
 @app.post("/tts")
 async def tts(request: TTSRequest):
@@ -247,7 +258,7 @@ async def tts(request: TTSRequest):
             status_code=500,
             detail=f"TTS falló: {stderr or stdout or 'sin detalle'}"
         )
-    
+
     return FileResponse(
         output_path,
         media_type="audio/wav",
@@ -256,6 +267,8 @@ async def tts(request: TTSRequest):
     )
 
 @app.post("/reset")
-def reset():
-    threading.Thread(target=agent.reset).start()
-    return {"status": "Sesión reiniciada, warm-up en proceso"}
+def reset(rol: str = "asistente", totem_id: str = "default"):
+    rol = normalize_rol(rol)
+    totem_id = normalize_totem_id(totem_id)
+    threading.Thread(target=agent_manager.reset, args=(rol, totem_id)).start()
+    return {"status": f"Sesión '{rol}:{totem_id}' reiniciada, warm-up en proceso"}
