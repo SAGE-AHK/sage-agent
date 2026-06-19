@@ -31,8 +31,8 @@ services:
 
   ollama-init:
     image: ollama/ollama:latest
-    logging:
-      driver: "none"
+    #logging:
+     # driver: "none"
     depends_on:
       ollama:
         condition: service_healthy
