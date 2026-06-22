@@ -2,3 +2,8 @@ fastapi
 uvicorn
 requests
 pydantic
+python-dotenv
+
+# Opcional: sólo necesario si se setea DATABASE_URL para persistir feedback
+# en Postgres (ver db/README.md y app/db.py).
+# psycopg[binary]>=3.1
